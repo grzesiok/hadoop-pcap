@@ -206,6 +206,9 @@ public class PcapReader implements Iterable<Packet> {
 			    PROTOCOL_TCP == protocol) {
 	
 				byte[] packetPayload = buildTcpAndUdpPacket(packet, packetData, ipProtocolHeaderVersion, ipStart, ipHeaderLen, totalLength);
+                                if (packetPayload == null) {
+                                    return null;
+                                }
 
 				if (isReassemble() && PROTOCOL_TCP == protocol) {
 					Flow flow = packet.getFlow();
@@ -364,6 +367,11 @@ public class PcapReader implements Iterable<Packet> {
 	 * ipStart is the start of the IP packet in packetData
 	 */
 	private byte[] buildTcpAndUdpPacket(Packet packet, byte[] packetData, int ipProtocolHeaderVersion, int ipStart, int ipHeaderLen, int totalLength) {
+		// XXX: doesn't include payload ? (iphdr + udphdr + 4:offset of udp/tcp srcport 2: port field)
+		if (packetData.length < (ipStart + ipHeaderLen + 4 + 2)) {
+			return null;
+		}
+            
 		packet.put(Packet.SRC_PORT, PcapReaderUtil.convertShort(packetData, ipStart + ipHeaderLen + PROTOCOL_HEADER_SRC_PORT_OFFSET));
 		packet.put(Packet.DST_PORT, PcapReaderUtil.convertShort(packetData, ipStart + ipHeaderLen + PROTOCOL_HEADER_DST_PORT_OFFSET));
 
