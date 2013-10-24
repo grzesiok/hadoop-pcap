@@ -115,6 +115,10 @@ public class PcapReader implements Iterable<Packet> {
 		/*
 		 * No Checksum on this packet?
 		 */
+               // XXX: may corrupt ?
+               if (packetData.length < (ipStart + ipHeaderLen + 8))
+                        return -1;
+
 		if (packetData[ipStart + ipHeaderLen + 6] == 0 &&
 		    packetData[ipStart + ipHeaderLen + 7] == 0)
 			return -1;
@@ -166,6 +170,12 @@ public class PcapReader implements Iterable<Packet> {
         packet.put(Packet.TS_USEC, packetTimestampUsec);
 
 		long packetSize = PcapReaderUtil.convertInt(pcapPacketHeader, CAP_LEN_OFFSET, reverseHeaderByteOrder);
+                // XXX: may corrupt ?
+                if (packetSize < 0)
+                    {
+                        return null;
+                    }
+
 		packetData = new byte[(int)packetSize];
 		if (!readBytes(packetData))
 			return packet;
@@ -422,6 +432,11 @@ public class PcapReader implements Iterable<Packet> {
 						+ "). Packet may be corrupted. Returning only available data.");
 			payloadLength = packetData.length - payloadDataStart;
 		}
+		if (payloadLength < 0)
+		    {
+			LOG.warn("Payload length is negative (" + payloadLength + "). Returning empty payload.");
+			return new byte[0];
+		    }
 		byte[] data = new byte[payloadLength];
 		System.arraycopy(packetData, payloadDataStart, data, 0, payloadLength);
 		return data;
