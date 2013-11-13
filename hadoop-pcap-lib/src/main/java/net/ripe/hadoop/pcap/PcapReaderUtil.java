@@ -5,9 +5,13 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.math.BigInteger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 
 public class PcapReaderUtil {
 	private static Map<Integer, String> protocols;
+        public static final Log LOG = LogFactory.getLog(PcapReaderUtil.class);
 
 	static {
 		protocols = new HashMap<Integer, String>();
@@ -58,6 +62,11 @@ public class PcapReaderUtil {
 
 	public static int convertShort(byte[] data, int offset) {
 		byte[] target = new byte[2];
+                if ((data.length - offset) < target.length) {
+                        LOG.warn("data length is not enough. discarding (data.length = " + data.length
+                                 + "offset = " + offset);
+                        return -1;
+                }
 		System.arraycopy(data, offset, target, 0, target.length);
 		return convertShort(target);
 	}

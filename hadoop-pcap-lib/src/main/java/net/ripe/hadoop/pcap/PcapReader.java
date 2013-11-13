@@ -171,8 +171,10 @@ public class PcapReader implements Iterable<Packet> {
 
 		long packetSize = PcapReaderUtil.convertInt(pcapPacketHeader, CAP_LEN_OFFSET, reverseHeaderByteOrder);
                 // XXX: may corrupt ?
-                if (packetSize < 0)
+                // XXX: limit huge packets under 20K bytes (no idea)
+                if (packetSize < 0 || packetSize > 20000)
                     {
+                        LOG.warn("skip invalid size packet: " + packetSize + " bytes.");
                         return null;
                     }
 
