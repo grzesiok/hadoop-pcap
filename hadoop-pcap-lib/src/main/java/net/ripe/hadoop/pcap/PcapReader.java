@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.sql.Timestamp;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -159,11 +160,11 @@ public class PcapReader implements Iterable<Packet> {
 		Packet packet = createPacket();
 
 		long packetTimestamp = PcapReaderUtil.convertInt(pcapPacketHeader, TIMESTAMP_OFFSET, reverseHeaderByteOrder);
-		packet.put(Packet.TIMESTAMP, packetTimestamp);
 
 		long packetTimestampMicros = PcapReaderUtil.convertInt(pcapPacketHeader, TIMESTAMP_MICROS_OFFSET, reverseHeaderByteOrder);
 		packet.put(Packet.TIMESTAMP_MICROS, packetTimestampMicros);
 
+		packet.put(Packet.TIMESTAMP, new Timestamp(packetTimestamp*1000 + packetTimestampMicros/1000));
         // Prepare the timestamp with a BigDecimal to include microseconds
         BigDecimal packetTimestampUsec = new BigDecimal(packetTimestamp
         + (double) packetTimestampMicros/1000000, ts_mc);
