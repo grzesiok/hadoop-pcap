@@ -91,6 +91,7 @@ public class PcapReader implements Iterable<Packet> {
 			//
 			if (caughtEOF) {
 				LOG.warn("Skipping empty file");
+				System.out.println("Skipping empty file");
 				return;
 			}
 			throw new IOException("Couldn't read PCAP header");
@@ -119,6 +120,7 @@ public class PcapReader implements Iterable<Packet> {
                // XXX: may corrupt ?
                if (packetData.length < (ipStart + ipHeaderLen + 8)) {
                     LOG.warn("packetData.length is less than ip header. length= " + packetData.length + " and ipStart= " + ipStart + " ipHeaderLen= " + ipHeaderLen);
+                    System.out.println("packetData.length is less than ip header. length= " + packetData.length + " and ipStart= " + ipStart + " ipHeaderLen= " + ipHeaderLen);
                     return -1;
 	       }
 
@@ -158,6 +160,7 @@ public class PcapReader implements Iterable<Packet> {
 		pcapPacketHeader = new byte[PACKET_HEADER_SIZE];
 		if (!readBytes(pcapPacketHeader)) {
 		    LOG.warn("Header is null.");
+		    System.out.println("Header is null.");
 		    return null;
 		}
 
@@ -179,7 +182,8 @@ public class PcapReader implements Iterable<Packet> {
                 if (packetSize < 0 || packetSize > 20000)
                     {
                         LOG.warn("skip invalid size packet: " + packetSize + " bytes.");
-                        return null;
+                        System.out.println("skip invalid size packet: " + packetSize + " bytes.");
+                        return packet;
                     }
 
 		packetData = new byte[(int)packetSize];
@@ -214,7 +218,8 @@ public class PcapReader implements Iterable<Packet> {
 				byte[] packetPayload = buildTcpAndUdpPacket(packet, packetData, ipProtocolHeaderVersion, ipStart, ipHeaderLen, totalLength);
                                 if (packetPayload == null) {
 				    LOG.warn("payload is null.");
-                                    return null;
+				    System.out.println("payload is null.");
+                                    return packet;
                                 }
 
 				if (isReassemble() && PROTOCOL_TCP == protocol) {
@@ -235,6 +240,7 @@ public class PcapReader implements Iterable<Packet> {
 							for (SequencePayload seqPayload : fragments) {
 								if (prev != null && !seqPayload.linked(prev)) {
 									LOG.warn("Broken sequence chain between " + seqPayload + " and " + prev + ". Returning empty payload.");
+									System.out.println("Broken sequence chain between " + seqPayload + " and " + prev + ". Returning empty payload.");
 									packetPayload = new byte[0];
 									break;
 								}
@@ -377,6 +383,7 @@ public class PcapReader implements Iterable<Packet> {
 		// XXX: doesn't include payload ? (iphdr + udphdr + 4:offset of udp/tcp srcport 2: port field)
 		if (packetData.length < (ipStart + ipHeaderLen + 4 + 2)) {
 		    LOG.warn("no tcp/udp payload.");
+		    System.out.println("no tcp/udp payload.");
 		    return null;
 		}
             
@@ -439,6 +446,7 @@ public class PcapReader implements Iterable<Packet> {
 	protected byte[] readPayload(byte[] packetData, int payloadDataStart, int payloadLength) {
 		if (payloadDataStart > packetData.length) {
 			LOG.warn("Payload start (" + payloadDataStart + ") is larger than packet data (" + packetData.length + "). Returning empty payload.");
+			System.out.println("Payload start (" + payloadDataStart + ") is larger than packet data (" + packetData.length + "). Returning empty payload.");
 			return new byte[0];
 		}
 		if (payloadDataStart + payloadLength > packetData.length) {
@@ -446,11 +454,15 @@ public class PcapReader implements Iterable<Packet> {
 				LOG.warn("Payload length field value (" + payloadLength + ") is larger than available packet data (" 
 						+ (packetData.length - payloadDataStart) 
 						+ "). Packet may be corrupted. Returning only available data.");
+				System.out.println("Payload length field value (" + payloadLength + ") is larger than available packet data (" 
+						+ (packetData.length - payloadDataStart) 
+						+ "). Packet may be corrupted. Returning only available data.");
 			payloadLength = packetData.length - payloadDataStart;
 		}
 		if (payloadLength < 0)
 		    {
 			LOG.warn("Payload length is negative (" + payloadLength + "). Returning empty payload.");
+			System.out.println("Payload length is negative (" + payloadLength + "). Returning empty payload.");
 			return new byte[0];
 		    }
 		byte[] data = new byte[payloadLength];
@@ -491,8 +503,10 @@ public class PcapReader implements Iterable<Packet> {
 			if (next != null)
 				return true;
 			int remainingFlows = flows.size();
-			if (remainingFlows > 0)
+			if (remainingFlows > 0) {
 				LOG.warn("Still " + remainingFlows + " flows queued. Missing packets to finish assembly?");
+				System.out.println("Still " + remainingFlows + " flows queued. Missing packets to finish assembly?");
+                        }
 			return false;
 		}
 
