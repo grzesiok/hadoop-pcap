@@ -117,8 +117,10 @@ public class PcapReader implements Iterable<Packet> {
 		 * No Checksum on this packet?
 		 */
                // XXX: may corrupt ?
-               if (packetData.length < (ipStart + ipHeaderLen + 8))
-                        return -1;
+               if (packetData.length < (ipStart + ipHeaderLen + 8)) {
+                    LOG.warn("packetData.length is less than ip header. length= " + packetData.length + " and ipStart= " + ipStart + " ipHeaderLen= " + ipHeaderLen);
+                    return -1;
+	       }
 
 		if (packetData[ipStart + ipHeaderLen + 6] == 0 &&
 		    packetData[ipStart + ipHeaderLen + 7] == 0)
@@ -154,17 +156,18 @@ public class PcapReader implements Iterable<Packet> {
 
 	private Packet nextPacket() {
 		pcapPacketHeader = new byte[PACKET_HEADER_SIZE];
-		if (!readBytes(pcapPacketHeader))
-			return null;
+		if (!readBytes(pcapPacketHeader)) {
+		    LOG.warn("Header is null.");
+		    return null;
+		}
 
 		Packet packet = createPacket();
 
 		long packetTimestamp = PcapReaderUtil.convertInt(pcapPacketHeader, TIMESTAMP_OFFSET, reverseHeaderByteOrder);
+		packet.put(Packet.TIMESTAMP, packetTimestamp);
 
 		long packetTimestampMicros = PcapReaderUtil.convertInt(pcapPacketHeader, TIMESTAMP_MICROS_OFFSET, reverseHeaderByteOrder);
 		packet.put(Packet.TIMESTAMP_MICROS, packetTimestampMicros);
-
-		packet.put(Packet.TIMESTAMP, new Timestamp(packetTimestamp*1000 + packetTimestampMicros/1000));
         // Prepare the timestamp with a BigDecimal to include microseconds
         BigDecimal packetTimestampUsec = new BigDecimal(packetTimestamp
         + (double) packetTimestampMicros/1000000, ts_mc);
@@ -210,6 +213,7 @@ public class PcapReader implements Iterable<Packet> {
 	
 				byte[] packetPayload = buildTcpAndUdpPacket(packet, packetData, ipProtocolHeaderVersion, ipStart, ipHeaderLen, totalLength);
                                 if (packetPayload == null) {
+				    LOG.warn("payload is null.");
                                     return null;
                                 }
 
@@ -372,7 +376,8 @@ public class PcapReader implements Iterable<Packet> {
 	private byte[] buildTcpAndUdpPacket(Packet packet, byte[] packetData, int ipProtocolHeaderVersion, int ipStart, int ipHeaderLen, int totalLength) {
 		// XXX: doesn't include payload ? (iphdr + udphdr + 4:offset of udp/tcp srcport 2: port field)
 		if (packetData.length < (ipStart + ipHeaderLen + 4 + 2)) {
-			return null;
+		    LOG.warn("no tcp/udp payload.");
+		    return null;
 		}
             
 		packet.put(Packet.SRC_PORT, PcapReaderUtil.convertShort(packetData, ipStart + ipHeaderLen + PROTOCOL_HEADER_SRC_PORT_OFFSET));

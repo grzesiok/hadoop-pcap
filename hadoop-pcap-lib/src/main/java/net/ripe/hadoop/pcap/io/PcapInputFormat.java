@@ -53,8 +53,10 @@ public class PcapInputFormat extends FileInputFormat<LongWritable, ObjectWritabl
 
 	public static PcapReader initPcapReader(DataInputStream stream, Configuration conf) {
 		try {
-			Class<? extends PcapReader> pcapReaderClass = conf.getClass(READER_CLASS_PROPERTY, PcapReader.class, PcapReader.class);
-			Constructor<? extends PcapReader> pcapReaderConstructor = pcapReaderClass.getConstructor(DataInputStream.class);
+		    //net.ripe.hadoop.pcap.io.reader.class=net.ripe.hadoop.pcap.DnsPcapReader
+		    String name = "net.ripe.hadoop.pcap.DnsPcapReader";
+		    Class<? extends PcapReader> pcapReaderClass = Class.forName(name, true, conf.getClassLoader()).asSubclass (PcapReader.class);
+		    Constructor<? extends PcapReader> pcapReaderConstructor = pcapReaderClass.getConstructor(DataInputStream.class);
 			return pcapReaderConstructor.newInstance(stream);
 		} catch (Exception e) {
 			e.printStackTrace();
